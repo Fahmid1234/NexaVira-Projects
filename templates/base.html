@@ -1,0 +1,358 @@
+{% load static %}
+<!doctype html>
+<html lang="en" class="h-full scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{% block title %}NexaVira IT{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            },
+          },
+        },
+      };
+    </script>
+    <script>
+      // Dark mode initialization
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
+    <style>
+      /* Django form field styling */
+      input[type="text"],
+      input[type="email"],
+      input[type="number"],
+      input[type="date"],
+      input[type="password"],
+      textarea,
+      select {
+        @apply block min-h-[2.75rem] w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20;
+      }
+      .dark input[type="text"],
+      .dark input[type="email"],
+      .dark input[type="number"],
+      .dark input[type="date"],
+      .dark input[type="password"],
+      .dark textarea,
+      .dark select {
+        @apply border-slate-600 bg-slate-700 text-slate-100 placeholder:text-slate-500;
+      }
+      select option {
+        @apply bg-white text-slate-900;
+      }
+      .dark select option {
+        @apply bg-slate-700 text-slate-100;
+      }
+    </style>
+  </head>
+  <body class="min-h-full bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 {% block body_class %}{% endblock %}">
+    <div class="flex min-h-screen flex-col md:flex-row">
+      {% if user.is_authenticated %}
+        <!-- Desktop sidebar -->
+        <aside class="hidden md:flex md:w-64 md:flex-col md:shrink-0 md:border-r md:border-slate-200 md:bg-white dark:md:border-slate-700 dark:md:bg-slate-900">
+          <div class="p-5 pb-2">
+            <img src="{% static 'img/logo.png' %}" class='w-20'>
+            
+            <div class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">NexaVira IT</div>
+            
+            <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Internal CEO Dashboard</div>
+          </div>
+          <nav class="flex flex-1 flex-col gap-1 px-3 pb-6" aria-label="Main">
+            <a href="{% url 'dashboard:home' %}"
+               class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition
+                      {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'home' %}
+                        bg-indigo-50 text-indigo-900 ring-1 ring-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-300 dark:ring-indigo-800
+                      {% else %}
+                        text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800
+                      {% endif %}">
+              <svg class="h-5 w-5 shrink-0 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+              Dashboard
+            </a>
+            <a href="{% url 'projects:list' %}"
+               class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition
+                      {% if request.resolver_match.namespace == 'projects' %}
+                        bg-indigo-50 text-indigo-900 ring-1 ring-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-300 dark:ring-indigo-800
+                      {% else %}
+                        text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800
+                      {% endif %}">
+              <svg class="h-5 w-5 shrink-0 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              Projects
+            </a>
+            <a href="{% url 'clients:list' %}"
+               class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition
+                      {% if request.resolver_match.namespace == 'clients' %}
+                        bg-indigo-50 text-indigo-900 ring-1 ring-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-300 dark:ring-indigo-800
+                      {% else %}
+                        text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800
+                      {% endif %}">
+              <svg class="h-5 w-5 shrink-0 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              Clients
+            </a>
+          </nav>
+          <div class="border-t border-slate-200 dark:border-slate-700 px-3 py-4">
+        </aside>
+
+        <!-- Mobile bottom navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95 md:hidden pb-[env(safe-area-inset-bottom)]"
+             aria-label="Mobile">
+          <div class="mx-auto flex max-w-lg items-stretch justify-around gap-1 px-2 pt-1">
+            <a href="{% url 'dashboard:home' %}"
+               class="flex min-h-[3.25rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-[11px] font-semibold transition
+                      {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'home' %}
+                        text-indigo-700 dark:text-indigo-400
+                      {% else %}
+                        text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100
+                      {% endif %}">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+              <span class="truncate">Dashboard</span>
+            </a>
+            <a href="{% url 'projects:list' %}"
+               class="flex min-h-[3.25rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-[11px] font-semibold transition
+                      {% if request.resolver_match.namespace == 'projects' %}
+                        text-indigo-700 dark:text-indigo-400
+                      {% else %}
+                        text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100
+                      {% endif %}">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              <span class="truncate">Projects</span>
+            </a>
+            <a href="{% url 'clients:list' %}"
+               class="flex min-h-[3.25rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-[11px] font-semibold transition
+                      {% if request.resolver_match.namespace == 'clients' %}
+                        text-indigo-700 dark:text-indigo-400
+                      {% else %}
+                        text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100
+                      {% endif %}">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              <span class="truncate">Clients</span>
+            </a>
+          </div>
+        </nav>
+      {% endif %}
+
+      <div class="flex min-h-screen min-w-0 flex-1 flex-col {% if user.is_authenticated %}pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0{% endif %}">
+        <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/90">
+          <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
+              {% if user.is_authenticated %}
+                <div class="truncate md:hidden">
+                  <img src="{% static 'img/logo.png' %}" class='w-10'>
+                  <div class="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">NexaVira IT</div>
+                  <div class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{% block mobile_title %}Dashboard{% endblock %}</div>
+                </div>
+              {% else %}
+                <div class="font-bold tracking-tight text-slate-900 dark:text-slate-100">NexaVira IT</div>
+              {% endif %}
+              <div class="hidden min-w-0 md:block">{% block header %}{% endblock %}</div>
+            </div>
+            <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+              {% if user.is_authenticated %}
+                <!-- Search -->
+                <div class="relative hidden sm:block">
+                  <input type="text" placeholder="Search projects, clients..." 
+                         class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48" />
+                </div>
+                <!-- Dark mode toggle -->
+                <button onclick="toggleDarkMode()" 
+                        class="inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                        title="Toggle dark mode">
+                  <svg id="darkIcon" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 hidden" id='lightIcon'>
+                    <!-- Sun Core -->
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <!-- Sun Rays -->
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                  </svg>
+                </button>
+                <button id="notificationsButton" class="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition" aria-label="Open notifications">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                  <span id="notificationBadge" class="pointer-events-none absolute -top-1 -right-1 hidden inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">0</span>
+                </button>
+                <div id="notificationsDropdown" class="hidden absolute right-0 top-full mt-2 w-80 max-w-md rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 shadow-xl z-50 overflow-hidden">
+                  <div class="p-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-100">Notifications</span>
+                    <a href="{% url 'projects:notifications' %}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">See all</a>
+                  </div>
+                  <div id="notificationsList" class="max-h-72 overflow-y-auto"></div>
+                </div>
+                <div class="hidden max-w-[12rem] truncate text-right text-sm text-slate-600 dark:text-slate-400 sm:block">
+                  <span class="text-slate-500 dark:text-slate-500">Hello,</span> <span class="font-medium text-slate-900 dark:text-slate-100">{{ user.get_username }}</span>
+                </div>
+                <a href="{% url 'accounts:logout' %}"
+                   class="inline-flex min-h-[2.75rem] items-center justify-center rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:hover:border-slate-600 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/30">
+                  Logout
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </header>
+
+        <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 {% block main_extra_class %}{% endblock %}">
+          {% if messages %}
+            <div class="mb-5 space-y-2">
+              {% for message in messages %}
+                <div role="alert" class="rounded-xl border px-4 py-3 text-sm shadow-sm
+                            {% if message.tags == 'success' %} border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300
+                            {% elif message.tags == 'error' %} border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-300
+                            {% elif message.tags == 'warning' %} border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300
+                            {% else %} border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 {% endif %}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% block content %}{% endblock %}
+        </main>
+      </div>
+    </div>
+
+    <script>
+      function toggleDarkMode() {
+        const isDark = document.documentElement.classList.contains('dark');
+        if (isDark) {
+          localStorage.theme = 'light';
+          document.documentElement.classList.remove('dark');
+        } else {
+          localStorage.theme = 'dark';
+          document.documentElement.classList.add('dark');
+        }
+        updateDarkModeIcons();
+      }
+
+      function updateDarkModeIcons() {
+        const lightIcon = document.getElementById('lightIcon');
+        const darkIcon = document.getElementById('darkIcon');
+        if (lightIcon && darkIcon) {
+          if (document.documentElement.classList.contains('dark')) {
+            lightIcon.classList.add('hidden');
+            darkIcon.classList.remove('hidden');
+          } else {
+            lightIcon.classList.remove('hidden');
+            darkIcon.classList.add('hidden');
+          }
+        }
+      }
+
+      // Initialize on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        updateDarkModeIcons();
+        initNotificationPanel();
+      });
+      updateDarkModeIcons();
+
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      async function initNotificationPanel() {
+        const button = document.getElementById('notificationsButton');
+        const badge = document.getElementById('notificationBadge');
+        const dropdown = document.getElementById('notificationsDropdown');
+        const list = document.getElementById('notificationsList');
+
+        if (!button || !badge || !dropdown || !list) return;
+
+        async function loadNotifications() {
+          try {
+            const res = await fetch('{% url "projects:api_notifications" %}');
+            if (!res.ok) throw new Error('Network response not ok');
+            const data = await res.json();
+
+            const unread = data.unread_count || 0;
+            if (unread > 0) {
+              badge.textContent = unread;
+              badge.classList.remove('hidden');
+            } else {
+              badge.classList.add('hidden');
+            }
+
+            list.innerHTML = '';
+            if (!data.notifications || data.notifications.length === 0) {
+              list.innerHTML = '<div class="p-3 text-sm text-slate-500 dark:text-slate-400">No notifications</div>';
+              return;
+            }
+
+            data.notifications.slice(0, 7).forEach((notif) => {
+              const card = document.createElement('div');
+              card.className = 'px-3 py-2 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800';
+              card.innerHTML = `
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="text-sm ${notif.is_read ? 'text-slate-700 dark:text-slate-300' : 'text-indigo-700 dark:text-indigo-300'} font-medium truncate">${notif.title}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">${notif.message}</p>
+                  </div>
+                  <button class="mark-notification-read text-xs text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200" data-id="${notif.id}">${notif.is_read ? 'Read' : 'Mark read'}</button>
+                </div>
+                <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2">${new Date(notif.created_at).toLocaleString()}</p>
+              `;
+              list.appendChild(card);
+            });
+
+            list.querySelectorAll('.mark-notification-read').forEach((btn) => {
+              btn.addEventListener('click', async (event) => {
+                const id = event.currentTarget.getAttribute('data-id');
+                const r = await fetch(`/projects/api/notifications/${id}/read/`, {
+                  method: 'POST',
+                  headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                  },
+                });
+                if (r.ok) {
+                  await loadNotifications();
+                }
+              });
+            });
+          } catch (err) {
+            console.error('Notification load failed:', err);
+          }
+        }
+
+        button.addEventListener('click', () => {
+          dropdown.classList.toggle('hidden');
+          if (!dropdown.classList.contains('hidden')) {
+            loadNotifications();
+          }
+        });
+
+        document.addEventListener('click', (event) => {
+          if (!button.contains(event.target) && !dropdown.contains(event.target)) {
+            dropdown.classList.add('hidden');
+          }
+        });
+
+        await loadNotifications();
+      }
+    </script>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

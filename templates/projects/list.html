@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Projects · NexaVira IT{% endblock %}
+
+{% block mobile_title %}Projects{% endblock %}
+{% block header %}
+  <div class="text-sm font-medium text-slate-600">Projects</div>
+{% endblock %}
+
+{% block content %}
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">Projects</h1>
+      <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Filter, sort, message clients, and manage delivery.</p>
+    </div>
+    <a href="{% url 'projects:create' %}"
+       class="group inline-flex min-h-[3rem] shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all duration-200 hover:from-indigo-700 hover:to-indigo-800 hover:shadow-xl hover:shadow-indigo-600/30 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-500/40 active:scale-95 sm:self-center">
+      <svg class="h-5 w-5 transition-transform group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Add project
+    </a>
+  </div>
+
+  <form method="get" class="mt-6 grid grid-cols-1 gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-900/40 ring-1 ring-slate-900/5 dark:ring-slate-800 sm:grid-cols-12 sm:items-end sm:gap-4 sm:p-5">
+    <div class="sm:col-span-5">
+      <label for="filter-q" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Search</label>
+      <input id="filter-q" name="q" value="{{ q }}" placeholder="Project title or client name…"
+             class="block w-full min-h-[2.75rem] rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-2.5 text-sm shadow-sm transition placeholder:text-slate-400 dark:placeholder:text-slate-500 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20" />
+    </div>
+    <div class="grid grid-cols-1 gap-3 sm:col-span-5 sm:grid-cols-2">
+      <div>
+        <label for="filter-status" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</label>
+        <select id="filter-status" name="status" class="block w-full min-h-[2.75rem] cursor-pointer rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20">
+          <option value="">All statuses</option>
+          <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+          <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+        </select>
+      </div>
+      <div>
+        <label for="filter-sort" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sort</label>
+        <select id="filter-sort" name="sort" class="block w-full min-h-[2.75rem] cursor-pointer rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20">
+          <option value="deadline" {% if sort == 'deadline' or not sort %}selected{% endif %}>Deadline (soonest)</option>
+          <option value="-deadline" {% if sort == '-deadline' %}selected{% endif %}>Deadline (latest)</option>
+          <option value="budget" {% if sort == 'budget' %}selected{% endif %}>Budget (low → high)</option>
+          <option value="-budget" {% if sort == '-budget' %}selected{% endif %}>Budget (high → low)</option>
+        </select>
+      </div>
+    </div>
+    <div class="sm:col-span-2">
+      <button type="submit"
+              class="flex w-full min-h-[2.75rem] items-center justify-center rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-slate-900 dark:bg-slate-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 dark:hover:bg-slate-600 focus:outline-none focus:ring-4 focus:ring-slate-400/30">
+        Apply filters
+      </button>
+    </div>
+  </form>
+
+  <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 shadow-md shadow-slate-200/40 dark:shadow-slate-900/40 ring-1 ring-slate-900/5 dark:ring-slate-800">
+    <!-- Bulk Actions Toolbar (Hidden by default) -->
+    <div id="bulkActionsBar" class="hidden border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 px-4 sm:px-5 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span id="selectedCount" class="text-sm font-medium text-slate-600 dark:text-slate-300">0 selected</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <form id="bulkActionForm" method="post" action="{% url 'projects:bulk_action' %}" class="flex items-center gap-2">
+          {% csrf_token %}
+          <select name="action" class="min-h-[2rem] px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100">
+            <option value="">Select action...</option>
+            <option value="complete">Mark as Completed</option>
+            <option value="activate">Mark as Active</option>
+            <option value="delete">Delete Selected</option>
+          </select>
+          <div id="bulkProjectIds"></div>
+          <button type="submit" class="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition">
+            Apply
+          </button>
+        </form>
+        <button id="cancelBulkActions" type="button" class="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <div class="-mx-px overflow-x-auto sm:mx-0">
+      <table class="min-w-[1100px] w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-700/50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+            <th class="whitespace-nowrap px-4 py-3 sm:px-5">
+              <input type="checkbox" id="selectAll" class="w-4 h-4 cursor-pointer" title="Select all" />
+            </th>
+            <th class="whitespace-nowrap px-4 py-3 sm:px-5">Client</th>
+            <th class="min-w-[14rem] px-4 py-3 sm:px-5">Project</th>
+            <th class="whitespace-nowrap px-4 py-3 sm:px-5">Budget</th>
+            <th class="whitespace-nowrap px-4 py-3 sm:px-5">Start</th>
+            <th class="whitespace-nowrap px-4 py-3 sm:px-5">Deadline</th>
+            <th class="whitespace-nowrap px-4 py-3 sm:px-5">Remaining</th>
+            <th class="whitespace-nowrap px-4 py-3 sm:px-5">Status</th>
+            <th class="whitespace-nowrap px-4 py-3 sm:px-5">Contact</th>
+            <th class="whitespace-nowrap px-4 py-3 text-right sm:px-5">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+          {% for p in projects %}
+            {% with msg="Hello "|add:p.client.name|add:", update for your project '"|add:p.title|add:"': status is "|add:p.get_status_display|add:"." %}
+            <tr class="project-row hover:bg-slate-50/80 dark:hover:bg-slate-700/50"
+                data-start="{{ p.start_date|date:'Y-m-d' }}"
+                data-deadline="{{ p.deadline|date:'Y-m-d' }}"
+                data-status="{{ p.status }}"
+                data-id="{{ p.id }}">
+              <td class="whitespace-nowrap px-4 py-3.5 sm:px-5">
+                <input type="checkbox" class="project-checkbox w-4 h-4 cursor-pointer" value="{{ p.id }}" />
+              </td>
+              <td class="whitespace-nowrap px-4 py-3.5 text-slate-800 dark:text-slate-300 sm:px-5">{{ p.client.name }}</td>
+              <td class="px-4 py-3.5 align-center sm:px-5">
+                <div class="font-medium text-slate-900 dark:text-slate-100">{{ p.title }}</div>
+                
+              </td>
+              <td class="whitespace-nowrap px-4 py-3.5 tabular-nums text-slate-800 dark:text-slate-300 sm:px-5">{{ p.budget }} ৳</td>
+              <td class="whitespace-nowrap px-4 py-3.5 text-slate-900 dark:text-slate-100 sm:px-5">{{ p.start_date }}</td>
+              <td class="whitespace-nowrap px-4 py-3.5 text-slate-900 dark:text-slate-100 sm:px-5">{{ p.deadline }}</td>
+              <td class="whitespace-nowrap px-4 py-3.5 sm:px-5">
+                <span class="remaining block text-slate-900 dark:text-slate-100"></span>
+                <div class="mt-2 h-2 w-full max-w-[7rem] overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700 sm:w-32">
+                  <div class="progress h-full w-0 bg-indigo-600 transition-[width] duration-300"></div>
+                </div>
+              </td>
+              <td class="whitespace-nowrap px-4 py-3.5 sm:px-5">
+                {% if p.status == 'completed' %}
+                  <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                    Completed
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center rounded-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/20 px-2.5 py-1 text-xs font-semibold text-sky-800 dark:text-sky-300">
+                    Active
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3.5 sm:px-5">
+                <div class="mt-2 flex flex-wrap gap-2">
+                  {% if p.client.phone %}
+                    <a class="inline-flex min-h-[2.25rem] items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-6 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100 dark:bg-transparent dark:text-[#ffffff]"
+                       href="https://wa.me/{{ p.client.phone }}?text={{ msg|urlencode }}"
+                       target="_blank" rel="noopener noreferrer"
+                       aria-label="Open WhatsApp message for {{ p.client.name }}">
+                      <img src="{% static 'img/whatsapp.svg' %}" alt="" width="18" height="18" class="h-[18px] w-[18px] shrink-0" decoding="async" />
+                      Inbox
+                    </a>
+                  {% endif %}
+                  {% if p.client.messenger_username %}
+                    <a class="inline-flex min-h-[2.25rem] items-center justify-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-6 text-xs font-semibold text-sky-900 transition hover:bg-sky-100 dark:bg-transparent dark:text-[#ffffff]"
+                       href="https://m.me/{{ p.client.messenger_username }}"
+                       target="_blank" rel="noopener noreferrer"
+                       aria-label="Open Messenger chat for {{ p.client.name }}">
+                      <img src="{% static 'img/messenger.svg' %}" alt="" width="18" height="18" class="h-[18px] w-[18px] shrink-0" decoding="async" />
+                      Inbox
+                    </a>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="px-4 py-3.5 text-right align-top sm:px-5">
+                <div class="flex flex-col items-end gap-2 sm:flex-row sm:flex-wrap sm:justify-end sm:gap-x-1 sm:gap-y-1">
+                  <a href="{% url 'projects:edit' p.pk %}"
+                     class="group inline-flex min-h-[2rem] items-center justify-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition-all hover:bg-indigo-100 dark:hover:bg-indigo-900/30 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm">
+                    <svg class="h-3.5 w-3.5 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                  </a>
+                  {% if p.status != 'completed' %}
+                    <form method="post" action="{% url 'projects:complete' p.pk %}" class="inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                      <button type="submit"
+                              class="group inline-flex min-h-[2rem] items-center justify-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 transition-all hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm">
+                        <svg class="h-3.5 w-3.5 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Complete
+                      </button>
+                    </form>
+                  {% endif %}
+                  <button type="button"
+                          class="group inline-flex min-h-[2rem] items-center justify-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 px-3 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300 transition-all hover:bg-rose-100 dark:hover:bg-rose-900/30 hover:border-rose-300 dark:hover:border-rose-700 hover:shadow-sm"
+                          data-delete-url="{% url 'projects:delete' p.pk %}"
+                          data-delete-title="{{ p.title|escape }}">
+                    <svg class="h-3.5 w-3.5 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endwith %}
+          {% empty %}
+            <tr>
+              <td colspan="9" class="px-4 py-14 text-center text-slate-500 dark:text-slate-400 sm:px-5">
+                No projects match your filters.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="deleteModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+    <div class="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-2xl dark:shadow-slate-900/40 ring-1 ring-slate-900/10 dark:ring-slate-700">
+      <h2 id="deleteModalTitle" class="text-lg font-bold text-slate-900 dark:text-slate-100">Delete project?</h2>
+      <p class="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+        This permanently removes <span id="deleteProjectTitle" class="font-semibold text-slate-900 dark:text-slate-100"></span>.
+      </p>
+      <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+        <button type="button" id="cancelDelete" class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-600 sm:w-auto">
+          Cancel
+        </button>
+        <a id="confirmDelete" href="#" class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white shadow-md transition hover:bg-rose-700 sm:w-auto">
+          Yes, delete
+        </a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    function parseDate(s) {
+      const [y, m, d] = s.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    function daysBetween(a, b) {
+      const ms = 24 * 60 * 60 * 1000;
+      const start = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+      const end = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+      return Math.round((end - start) / ms);
+    }
+
+    const today = new Date();
+    document.querySelectorAll('.project-row').forEach((row) => {
+      const start = parseDate(row.dataset.start);
+      const deadline = parseDate(row.dataset.deadline);
+      const remainingDays = daysBetween(today, deadline);
+      const totalDays = Math.max(1, daysBetween(start, deadline));
+      const elapsedDays = Math.max(0, daysBetween(start, today));
+      const progress = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)));
+
+      const remainingEl = row.querySelector('.remaining');
+      const progressEl = row.querySelector('.progress');
+      progressEl.style.width = progress + '%';
+
+      if (remainingDays < 0 && row.dataset.status !== 'completed') {
+        remainingEl.textContent = 'Overdue';
+        remainingEl.className = 'remaining block font-semibold text-rose-700 dark:text-rose-300';
+        row.classList.add('bg-rose-50/90');
+        progressEl.classList.remove('bg-indigo-600');
+        progressEl.classList.add('bg-rose-600');
+      } else if (remainingDays === 0) {
+        remainingEl.textContent = 'Due today';
+        remainingEl.className = 'remaining block font-semibold text-amber-700 dark:text-amber-300';
+        progressEl.classList.remove('bg-indigo-600');
+        progressEl.classList.add('bg-amber-500');
+      } else {
+        remainingEl.textContent = remainingDays + ' days';
+        remainingEl.className = 'remaining block text-slate-800 dark:text-slate-100';
+      }
+
+      if (row.dataset.status === 'completed') {
+        progressEl.style.width = '100%';
+        progressEl.classList.remove('bg-indigo-600');
+        progressEl.classList.add('bg-emerald-600');
+        remainingEl.textContent = '—';
+        remainingEl.className = 'remaining block text-slate-500 dark:text-slate-300';
+      }
+    });
+
+    // Bulk Actions
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const projectCheckboxes = document.querySelectorAll('.project-checkbox');
+    const bulkActionsBar = document.getElementById('bulkActionsBar');
+    const selectedCountEl = document.getElementById('selectedCount');
+    const bulkActionForm = document.getElementById('bulkActionForm');
+    const bulkProjectIds = document.getElementById('bulkProjectIds');
+    const cancelBulkActions = document.getElementById('cancelBulkActions');
+
+    function updateBulkActionsBar() {
+      const selectedCount = Array.from(projectCheckboxes).filter(cb => cb.checked).length;
+      selectedCountEl.textContent = selectedCount + ' selected';
+      
+      if (selectedCount > 0) {
+        bulkActionsBar.classList.remove('hidden');
+        // Update hidden inputs with selected IDs
+        bulkProjectIds.innerHTML = '';
+        projectCheckboxes.forEach(cb => {
+          if (cb.checked) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'project_ids';
+            input.value = cb.value;
+            bulkProjectIds.appendChild(input);
+          }
+        });
+      } else {
+        bulkActionsBar.classList.add('hidden');
+      }
+      
+      // Update select all checkbox
+      selectAllCheckbox.checked = projectCheckboxes.length > 0 && 
+        Array.from(projectCheckboxes).every(cb => cb.checked);
+    }
+
+    selectAllCheckbox.addEventListener('change', () => {
+      projectCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+      updateBulkActionsBar();
+    });
+
+    projectCheckboxes.forEach(cb => {
+      cb.addEventListener('change', updateBulkActionsBar);
+    });
+
+    cancelBulkActions.addEventListener('click', () => {
+      projectCheckboxes.forEach(cb => cb.checked = false);
+      selectAllCheckbox.checked = false;
+      updateBulkActionsBar();
+    });
+
+    // Delete Modal
+    const modal = document.getElementById('deleteModal');
+    const titleEl = document.getElementById('deleteProjectTitle');
+    const confirmEl = document.getElementById('confirmDelete');
+    const cancelEl = document.getElementById('cancelDelete');
+
+    document.querySelectorAll('button[data-delete-url]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        titleEl.textContent = btn.dataset.deleteTitle || 'this project';
+        confirmEl.setAttribute('href', btn.dataset.deleteUrl);
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+      });
+    });
+    cancelEl.addEventListener('click', () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.classList.remove('overflow-hidden');
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+      }
+    });
+  </script>
+{% endblock %}
